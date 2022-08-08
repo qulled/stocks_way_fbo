@@ -62,7 +62,7 @@ def dict_price(table_id):
                                 range=range_name, majorDimension='ROWS').execute()
     values = result.get('values', [])
     for item in values[1:]:
-        dict_price[str(item[3].upper())] = 0
+        dict_price[str(item[4].upper())] = 0
     service = build('sheets', 'v4', credentials=credentials)
     sheet = service.spreadsheets()
     result = sheet.values().get(spreadsheetId=table_id,
@@ -72,7 +72,6 @@ def dict_price(table_id):
         for article in dict_price:
             if article.startswith(item[0]):
                 dict_price[article]=item[1]
-                print(f'{article} - {item[1]}')
                 break
     return dict_price
 
@@ -81,6 +80,7 @@ def dicts_info(employees_sheet, list_barcode):
     dict_ur_lico = {}
     dict_brand = {}
     dict_subject = {}
+    dict_nomenclature = {}
     dict_article = {}
     dict_size = {}
     for x in range(2, employees_sheet.max_row + 1):
@@ -96,8 +96,10 @@ def dicts_info(employees_sheet, list_barcode):
         if article in list_barcode:
             dict_article[article] = employees_sheet.cell(row=x, column=6).value
         if article in list_barcode:
+            dict_nomenclature[article] = employees_sheet.cell(row=x, column=7).value
+        if article in list_barcode:
             dict_size[article] = employees_sheet.cell(row=x, column=9).value
-    return dict_ur_lico, dict_brand, dict_subject, dict_article, dict_size
+    return dict_ur_lico, dict_brand, dict_subject, dict_article, dict_nomenclature, dict_size
 
 
 def dicts_stocks(employees_sheet):
@@ -169,7 +171,7 @@ def update_table_barcode(table_id, list_barcode):
                 if len(list_barcode) != 0:
                     value = list_barcode[index]
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 4)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 5)}{i}',
                          'values': [[f'{value}']]}]
                     list_barcode.pop(index)
             except Exception as e:
@@ -196,7 +198,7 @@ def update_table_ur_lico(table_id, dict_ur_lico):
     else:
         for row in values[1:]:
             try:
-                barcode = row[4].strip().upper()
+                barcode = row[5].strip().upper()
                 if barcode in dict_ur_lico:
                     value = dict_ur_lico[barcode]
                     body_data += [
@@ -226,7 +228,7 @@ def update_table_brand(table_id, dict_brand):
     else:
         for row in values[1:]:
             try:
-                barcode = row[4].strip().upper()
+                barcode = row[5].strip().upper()
                 if barcode in dict_brand:
                     value = dict_brand[barcode]
                     body_data += [
@@ -242,7 +244,7 @@ def update_table_brand(table_id, dict_brand):
     sheet.values().batchUpdate(spreadsheetId=table_id, body=body).execute()
 
 
-def update_table_subject(table_id, dict_subject):
+def update_table_category(table_id, dict_subject):
     position_for_place = START_POSITION_FOR_PLACE
     service = build('sheets', 'v4', credentials=credentials)
     sheet = service.spreadsheets()
@@ -256,11 +258,41 @@ def update_table_subject(table_id, dict_subject):
     else:
         for row in values[1:]:
             try:
-                barcode = row[4].strip().upper()
+                barcode = row[5].strip().upper()
                 if barcode in dict_subject:
                     value = dict_subject[barcode]
                     body_data += [
                         {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 2)}{i}',
+                         'values': [[f'{value}']]}]
+            except:
+                pass
+            finally:
+                i += 1
+                body = {
+                    'valueInputOption': 'USER_ENTERED',
+                    'data': body_data}
+    sheet.values().batchUpdate(spreadsheetId=table_id, body=body).execute()
+
+
+def update_table_nomenclature(table_id, dict_nomenclature):
+    position_for_place = START_POSITION_FOR_PLACE
+    service = build('sheets', 'v4', credentials=credentials)
+    sheet = service.spreadsheets()
+    result = sheet.values().get(spreadsheetId=table_id,
+                                range=range_name, majorDimension='ROWS').execute()
+    values = result.get('values', [])
+    i = 2
+    body_data = []
+    if not values:
+        logging.info('No data found.')
+    else:
+        for row in values[1:]:
+            try:
+                barcode = row[5].strip().upper()
+                if barcode in dict_nomenclature:
+                    value = dict_nomenclature[barcode]
+                    body_data += [
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 3)}{i}',
                          'values': [[f'{value}']]}]
             except:
                 pass
@@ -286,11 +318,11 @@ def update_table_article(table_id, dict_article):
     else:
         for row in values[1:]:
             try:
-                barcode = row[4].strip().upper()
+                barcode = row[5].strip().upper()
                 if barcode in dict_article:
                     value = dict_article[barcode]
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 3)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 4)}{i}',
                          'values': [[f'{value}']]}]
             except:
                 pass
@@ -316,11 +348,11 @@ def update_table_size(table_id, dict_size):
     else:
         for row in values[1:]:
             try:
-                barcode = row[4].strip().upper()
+                barcode = row[5].strip().upper()
                 if barcode in dict_size:
                     value = dict_size[barcode]
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 5)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 6)}{i}',
                          'values': [[f'{value}']]}]
             except:
                 pass
@@ -346,18 +378,18 @@ def update_table_prise(dict_price):
     else:
         for row in values[1:]:
             try:
-                article = row[3].strip().upper()
+                article = row[4].strip().upper()
                 if article in dict_price:
                     if str(dict_price[article]).isnumeric():
                         if int(dict_price[article]) > 0:
                             value = dict_price[article]
                             body_data += [
-                                {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 6)}{i}',
+                                {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 7)}{i}',
                                  'values': [[f'{value}']]}]
                     else:
                         value = ''
                         body_data += [
-                            {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 6)}{i}',
+                            {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 7)}{i}',
                              'values': [[f'{value}']]}]
             except:
                 pass
@@ -383,17 +415,17 @@ def update_table_podolsk(table_id, dict_stock):
     else:
         for row in values[1:]:
             try:
-                barcode = row[4].strip().upper()
+                barcode = row[5].strip().upper()
                 ex = str(dict_stock[barcode])
                 if barcode in dict_stock and ex.isnumeric():
                     value = dict_stock[barcode]
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 8)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 9)}{i}',
                          'values': [[f'{value}']]}]
                 else:
                     value = ''
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 8)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 9)}{i}',
                          'values': [[f'{value}']]}]
             except:
                 pass
@@ -419,17 +451,17 @@ def update_table_kazan(table_id, dict_stock):
     else:
         for row in values[1:]:
             try:
-                barcode = row[4].strip().upper()
+                barcode = row[5].strip().upper()
                 ex = str(dict_stock[barcode])
                 if barcode in dict_stock and ex.isnumeric():
                     value = dict_stock[barcode]
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 9)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 10)}{i}',
                          'values': [[f'{value}']]}]
                 else:
                     value = ''
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 9)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 10)}{i}',
                          'values': [[f'{value}']]}]
             except:
                 pass
@@ -455,17 +487,17 @@ def update_table_electrostal(table_id, dict_stock):
     else:
         for row in values[1:]:
             try:
-                barcode = row[4].strip().upper()
+                barcode = row[5].strip().upper()
                 ex = str(dict_stock[barcode])
                 if barcode in dict_stock and ex.isnumeric():
                     value = dict_stock[barcode]
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 10)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 11)}{i}',
                          'values': [[f'{value}']]}]
                 else:
                     value = ''
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 10)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 11)}{i}',
                          'values': [[f'{value}']]}]
             except:
                 pass
@@ -491,17 +523,17 @@ def update_table_krasnodar(table_id, dict_stock):
     else:
         for row in values[1:]:
             try:
-                barcode = row[4].strip().upper()
+                barcode = row[5].strip().upper()
                 ex = str(dict_stock[barcode])
                 if barcode in dict_stock and ex.isnumeric():
                     value = dict_stock[barcode]
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 11)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 12)}{i}',
                          'values': [[f'{value}']]}]
                 else:
                     value = ''
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 11)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 12)}{i}',
                          'values': [[f'{value}']]}]
             except:
                 pass
@@ -527,17 +559,17 @@ def update_table_ekb(table_id, dict_stock):
     else:
         for row in values[1:]:
             try:
-                barcode = row[4].strip().upper()
+                barcode = row[5].strip().upper()
                 ex = str(dict_stock[barcode])
                 if barcode in dict_stock and ex.isnumeric():
                     value = dict_stock[barcode]
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 12)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 13)}{i}',
                          'values': [[f'{value}']]}]
                 else:
                     value = ''
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 12)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 13)}{i}',
                          'values': [[f'{value}']]}]
             except:
                 pass
@@ -563,17 +595,17 @@ def update_table_spb(table_id, dict_stock):
     else:
         for row in values[1:]:
             try:
-                barcode = row[4].strip().upper()
+                barcode = row[5].strip().upper()
                 ex = str(dict_stock[barcode])
                 if barcode in dict_stock and ex.isnumeric():
                     value = dict_stock[barcode]
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 13)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 14)}{i}',
                          'values': [[f'{value}']]}]
                 else:
                     value = ''
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 13)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 14)}{i}',
                          'values': [[f'{value}']]}]
             except:
                 pass
@@ -599,17 +631,17 @@ def update_table_novosibirsk(table_id, dict_stock):
     else:
         for row in values[1:]:
             try:
-                barcode = row[4].strip().upper()
+                barcode = row[5].strip().upper()
                 ex = str(dict_stock[barcode])
                 if barcode in dict_stock and ex.isnumeric():
                     value = dict_stock[barcode]
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 14)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 15)}{i}',
                          'values': [[f'{value}']]}]
                 else:
                     value = ''
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 14)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 15)}{i}',
                          'values': [[f'{value}']]}]
             except:
                 pass
@@ -635,17 +667,17 @@ def update_table_habarovsk(table_id, dict_stock):
     else:
         for row in values[1:]:
             try:
-                barcode = row[4].strip().upper()
+                barcode = row[5].strip().upper()
                 ex = str(dict_stock[barcode])
                 if barcode in dict_stock and ex.isnumeric():
                     value = dict_stock[barcode]
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 15)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 16)}{i}',
                          'values': [[f'{value}']]}]
                 else:
                     value = ''
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 15)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 16)}{i}',
                          'values': [[f'{value}']]}]
             except:
                 pass
@@ -671,17 +703,17 @@ def update_table_nursultan(table_id, dict_stock):
     else:
         for row in values[1:]:
             try:
-                barcode = row[4].strip().upper()
+                barcode = row[5].strip().upper()
                 ex = str(dict_stock[barcode])
                 if barcode in dict_stock and ex.isnumeric():
                     value = dict_stock[barcode]
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 16)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 17)}{i}',
                          'values': [[f'{value}']]}]
                 else:
                     value = ''
                     body_data += [
-                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 16)}{i}',
+                        {'range': f'{range_name}!{convert_to_column_letter(position_for_place + 17)}{i}',
                          'values': [[f'{value}']]}]
             except:
                 pass
@@ -701,7 +733,7 @@ if __name__ == '__main__':
         warnings.simplefilter("always")
         excel_file = openpyxl.load_workbook(f'final_excel/ALL-{dt.datetime.date(dt.datetime.now())}.xlsx')
     employees_sheet = excel_file['Sheet1']
-    dict_ur_lico, dict_brand, dict_subject, dict_article, dict_size = dicts_info(employees_sheet,
+    dict_ur_lico, dict_brand, dict_subject, dict_article, dict_nomenclature, dict_size = dicts_info(employees_sheet,
                                                                                  list_barcode(employees_sheet))
     dict_podolsk, dict_kazan, dict_electrostal, dict_krasnodar, dict_ekb, dict_spb, dict_novosibirsk, dict_habarovsk, dict_nursultan = dicts_stocks(
         employees_sheet)
@@ -709,7 +741,8 @@ if __name__ == '__main__':
     time.sleep(5)
     update_table_ur_lico(table_id,dict_ur_lico)
     update_table_brand(table_id, dict_brand)
-    update_table_subject(table_id,dict_subject)
+    update_table_category(table_id,dict_subject)
+    update_table_nomenclature(table_id,dict_nomenclature)
     update_table_article(table_id,dict_article)
     update_table_size(table_id,dict_size)
     update_table_prise(dict_price(table_id))

@@ -13,7 +13,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 options = Options()
 
-prefs = {'download.default_directory': r'C:\Users\ikaty\PycharmProjects\stocks_way_FBO\excel_docs'}
+prefs = {'download.default_directory': r'excel_docs/'}
 
 options.add_experimental_option('prefs', prefs)
 options.add_argument("--disable-blink-features")
@@ -45,7 +45,7 @@ def auth(url,name):
     cookies = pickle.load(open(f'cookies-{name}.py', 'rb'))
     for cookie in cookies:
         driver.add_cookie(cookie)
-    time.sleep(15)
+    time.sleep(20)
     attempt = driver.find_element(By.CLASS_NAME,'WarningCookiesBannerCard__button__DSLFl2gcQr')
     attempt.click()
     return time.sleep(1)
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     day = dt.datetime.now().strftime('%d')
     month = dt.datetime.now().strftime("%m")
     year = dt.datetime.now().strftime("%Y")
-    dirparth = 'excel_docs/'
+    dirparth = r'excel_docs/'
     try:
         name = 'Орлова'
         auth('https://seller.wildberries.ru/analytics/warehouse-remains',name)
